@@ -7,7 +7,6 @@ from message_parser import MessageParser
 
 class DNSServer(socketserver.BaseRequestHandler):
     def handle(self):
-        # try:
         debugLevel = 0
         cacheFile = 'cache.txt'
         localFile = 'dnsrelay.txt'
@@ -75,7 +74,9 @@ class DNSServer(socketserver.BaseRequestHandler):
             debugInfo += 'RDLENGTH: %d\n' % msgParser.respMsg['answer']['RDLENGTH']
             debugInfo += 'RDDATA: %s\n\n\n' % msgParser.respMsg['answer']['RDDATA']
         if debugLevel > 0:
-            print(debugInfo)
+            atype = msgParser.respMsg['answer']['ATYPE']
+            if atype == 1 or atype == 28:
+                print(debugInfo)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 import struct
 import socket
 import time
+import fcntl
 
 class MessageParser:
     def __init__(self, msg, cacheFile='cache.txt', localFile='dnsrelay.txt', foreignServer='10.3.9.4'):
@@ -150,6 +151,7 @@ class MessageParser:
                 answer = self.parse_answer(respMsg)
                 if answer['ATYPE'] == 1:
                     with open(cacheFile, 'a') as f:
+                        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
                         f.write(answer['RDDATA'] + ' ' + 
                                 answer['ANAME'] + ' ' + 
                                 str(answer['TTL']+time.time()) + '\n')
@@ -160,8 +162,10 @@ class MessageParser:
         cacheTable = {}
         dName_IP_timeStamp = ''
         with open(cacheFile, 'a+') as r:
+            fcntl.flock(r.fileno(), fcntl.LOCK_EX)
             lines = r.readlines()
         with open(cacheFile, 'w') as w:
+            fcntl.flock(w.fileno(), fcntl.LOCK_EX)
             for line in lines:
                 dName_IP_timeStamp = line.strip().split(' ')
                 timeNow = time.time()
