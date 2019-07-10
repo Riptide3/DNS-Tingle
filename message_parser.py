@@ -1,7 +1,7 @@
-import struct
-import socket
-import time
-import fcntl
+import struct # 处理字节流
+import socket # 与远端服务器通信
+import time   # 获取时间戳
+import fcntl  # 使用线程锁
 
 class MessageParser:
     def __init__(self, msg, cacheFile='cache.txt', localFile='dnsrelay.txt', foreignServer='10.3.9.4'):
@@ -17,6 +17,25 @@ class MessageParser:
             'answer': self.parse_answer(self.resp)
         }
 
+
+'''
+header
+  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+|                      ID                       |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+|QR|   Opcode  |AA|TC|RD|RA|   Z    |   RCODE   |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+|                    QDCOUNT                    |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+|                    ANCOUNT                    |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+|                    NSCOUNT                    |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+|                    ARCOUNT                    |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+'''
+# 解析报头
     def parse_header(self, recvMsg):
         try:
             (Id, flags, qdcount, ancount, nscount, arcount) = struct.unpack('>HHHHHH', recvMsg[0:12])
@@ -53,6 +72,7 @@ class MessageParser:
             return header
 
 
+# 解析报文中的域名
     def get_formatted_name(self, offset, recvMsg):
         name = ''
         count = 1
@@ -70,6 +90,7 @@ class MessageParser:
         return name, _offset
 
 
+# 解析报文中的IP地址
     def get_formatted_ip(self, recvMsg):
         _ip = ()
         _ip = struct.unpack('>BBBB', recvMsg[-4:])
@@ -81,6 +102,7 @@ class MessageParser:
         return ip
 
 
+# 解析报文中的IPV6地址
     def get_formatted_ipv6(self, recvMsg):
         _ipv6 = ()
         _ipv6 = struct.unpack('>HHHHHHHH', recvMsg[-16:])
@@ -90,8 +112,21 @@ class MessageParser:
             ipv6 += ':'
         ipv6 = ipv6.strip(':')
         return ipv6
-    
 
+'''
+question
+  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+|                                               |
+/                     QNAME                     /
+/                                               /
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+|                     QTYPE                     |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+|                     QCLASS                    |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+'''
+# 解析问题
     def parse_question(self, recvMsg):
         try:
             offset = 12
@@ -111,7 +146,29 @@ class MessageParser:
         finally:
             return question
 
-
+'''
+resource record
+  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+|                                               |
+/                                               /
+/                      NAME                     /
+|                                               |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+|                      TYPE                     |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+|                     CLASS                     |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+|                      TTL                      |
+|                                               |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+|                    RDLENGTH                   |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--|
+/                     RDATA                     /
+/                                               /
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+'''
+# 解析回答
     def parse_answer(self, recvMsg):
         try:
             header = self.parse_header(recvMsg)
@@ -140,6 +197,7 @@ class MessageParser:
             return answer
 
 
+# 获取回复报文
     def get_resp_msg(self, cacheFile, localFile, foreignServer):
         cacheTable = self.get_cache_table(cacheFile)
         respMsg = self.cache_query(cacheTable)
@@ -157,7 +215,7 @@ class MessageParser:
                                 str(answer['TTL']+time.time()) + '\n')
         return respMsg
         
-
+# 获取cache映射表
     def get_cache_table(self, cacheFile):
         cacheTable = {}
         dName_IP_timeStamp = ''
@@ -185,7 +243,7 @@ class MessageParser:
                     cacheTable[dName_IP_timeStamp[1]] = dName_IP_timeStamp[0]
         return cacheTable
 
-
+# 获取本地DNS映射表
     def get_map_table(self, localFile):
         mapTable = {}
         with open(localFile, 'r') as f:
@@ -195,7 +253,7 @@ class MessageParser:
                     mapTable[domainName_IP[1]] = domainName_IP[0]
         return mapTable
 
-
+# 在cache中查找IP
     def cache_query(self, cacheTable):
         self.respIp = ''
         try:
@@ -214,7 +272,7 @@ class MessageParser:
         respMsg = self.construct_respMsg(flags, ancount)
         return respMsg
 
-
+# 在本地文件中查找IP
     def local_query(self, mapTable):
         self.respIp = ''
         try:
@@ -233,7 +291,7 @@ class MessageParser:
         respMsg = self.construct_respMsg(flags, ancount)
         return respMsg
 
-
+# 构造回复报文
     def construct_respMsg(self, flags, ancount):
         respMsg = struct.pack('>HHHHHH', self.queryMsg['header']['ID'], flags, 
                                 self.queryMsg['header']['QDCOUNT'], ancount,
@@ -245,6 +303,8 @@ class MessageParser:
             respMsg += struct.pack('>BBBB', int(ip[0]), int(ip[1]), int(ip[2]), int(ip[3]))
         return respMsg
 
+
+# 向远端服务器发送DNS请求
     def foreign_query(self, foreignServer):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.sendto(self.msg, (foreignServer, 53))

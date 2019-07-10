@@ -1,6 +1,6 @@
 import sys
-import getopt
-import socketserver
+import getopt       # 解析命令行参数
+import socketserver # 多线程服务器
 from datetime import datetime
 
 from message_parser import MessageParser
