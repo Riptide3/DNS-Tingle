@@ -17,6 +17,7 @@ class DNSServer(socketserver.BaseRequestHandler):
                     '  -c, --cache=PATH\t指定缓存文件路径\n'
                     '  -f, --filename=PATH\t指定配置文件路径\n'
                     '  -s, --server=IPADDR\t外部DNS服务器的IP地址')
+        # 获取命令行参数
         try:
             opts, args = getopt.getopt(sys.argv[1:], 'hd:c:f:s:', ['help', 'debug=', 'cache=', 'filename=', 'server='])
             for opt, arg in opts:
@@ -32,10 +33,11 @@ class DNSServer(socketserver.BaseRequestHandler):
             print(helpDoc)
             sys.exit(1)
 
-        queryMsg = self.request[0]
-        querySock = self.request[1]
-        msgParser = MessageParser(queryMsg, cacheFile, localFile, foreignServer)
-
+        queryMsg = self.request[0] #获取报文
+        querySock = self.request[1] #保存socket信息
+        msgParser = MessageParser(queryMsg, cacheFile, localFile, foreignServer) #解析报文，构造回复报文
+        
+        # 构造debug信息
         debugInfo = ''
         if debugLevel == 1:
             debugInfo += datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -76,7 +78,8 @@ class DNSServer(socketserver.BaseRequestHandler):
             atype = msgParser.respMsg['answer']['ATYPE']
             if atype == 1 or atype == 28:
                 print(debugInfo)
-        querySock.sendto(msgParser.resp, self.client_address)
+
+        querySock.sendto(msgParser.resp, self.client_address) # 回传报文
 
 
 if __name__ == "__main__":
@@ -96,6 +99,7 @@ if __name__ == "__main__":
         print(helpDoc)
         sys.exit(1)
 
+    # 创建多线程服务器
     HOST_PORT = ('127.0.0.1', 53)
     server = socketserver.ThreadingUDPServer(HOST_PORT, DNSServer)
     server.serve_forever()
