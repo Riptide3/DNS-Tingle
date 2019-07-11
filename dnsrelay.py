@@ -35,7 +35,6 @@ class DNSServer(socketserver.BaseRequestHandler):
         queryMsg = self.request[0]
         querySock = self.request[1]
         msgParser = MessageParser(queryMsg, cacheFile, localFile, foreignServer)
-        querySock.sendto(msgParser.resp, self.client_address)
 
         debugInfo = ''
         if debugLevel == 1:
@@ -77,6 +76,7 @@ class DNSServer(socketserver.BaseRequestHandler):
             atype = msgParser.respMsg['answer']['ATYPE']
             if atype == 1 or atype == 28:
                 print(debugInfo)
+        querySock.sendto(msgParser.resp, self.client_address)
 
 
 if __name__ == "__main__":
