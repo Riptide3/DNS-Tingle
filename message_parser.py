@@ -177,7 +177,9 @@ class MessageParser:
             elif qtype == 28:
                 atype, aclass, ttl, rdlength = struct.unpack('>HHIH', recvMsg[-26:-16])
                 rddata = self.get_formatted_ipv6(recvMsg)
-
+            else:
+                atype = aclass = ttl = rdlength = 0
+                aname = rddata = ''
         except:
             atype = aclass = ttl = rdlength = 0
             aname = rddata = ''
