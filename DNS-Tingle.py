@@ -73,7 +73,7 @@ class DNSServer(socketserver.BaseRequestHandler):
             debugInfo += 'ACLASS: %d\n' % msgParser.respMsg['answer']['ACLASS']
             debugInfo += 'TTL: %d\n' % msgParser.respMsg['answer']['TTL']
             debugInfo += 'RDLENGTH: %d\n' % msgParser.respMsg['answer']['RDLENGTH']
-            debugInfo += 'RDDATA: %s\n\n\n' % msgParser.respMsg['answer']['RDDATA']
+            debugInfo += 'RDATA: %s\n\n\n' % msgParser.respMsg['answer']['RDATA']
         if debugLevel > 0:
             atype = msgParser.respMsg['answer']['ATYPE']
             if atype == 1 or atype == 28:

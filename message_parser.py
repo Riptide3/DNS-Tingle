@@ -173,16 +173,16 @@ class MessageParser:
             qtype = question['QTYPE']
             if qtype == 1:
                 atype, aclass, ttl, rdlength = struct.unpack('>HHIH', recvMsg[-14:-4])
-                rddata = self.get_formatted_ip(recvMsg)
+                rdata = self.get_formatted_ip(recvMsg)
             elif qtype == 28:
                 atype, aclass, ttl, rdlength = struct.unpack('>HHIH', recvMsg[-26:-16])
-                rddata = self.get_formatted_ipv6(recvMsg)
+                rdata = self.get_formatted_ipv6(recvMsg)
             else:
                 atype = aclass = ttl = rdlength = 0
-                aname = rddata = ''
+                aname = rdata = ''
         except:
             atype = aclass = ttl = rdlength = 0
-            aname = rddata = ''
+            aname = rdata = ''
         finally:
             answer = {
                 'ANAME': aname,
@@ -190,7 +190,7 @@ class MessageParser:
                 'ACLASS': aclass,
                 'TTL': ttl,
                 'RDLENGTH': rdlength,
-                'RDDATA': rddata
+                'RDATA': rdata
             }
             return answer
 
@@ -208,7 +208,7 @@ class MessageParser:
                 if answer['ATYPE'] == 1:
                     with open(cacheFile, 'a') as f:
                         fcntl.flock(f.fileno(), fcntl.LOCK_EX)
-                        f.write(answer['RDDATA'] + ' ' + 
+                        f.write(answer['RDATA'] + ' ' + 
                                 answer['ANAME'] + ' ' + 
                                 str(answer['TTL']+time.time()) + '\n')
         return respMsg
